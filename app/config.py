@@ -47,6 +47,15 @@ class Settings(BaseSettings):
     # instead of being auto-answered.
     high_value_claim_threshold: float = 500000
 
+    # Observability (Phase 4)
+    otel_enabled: bool = True
+    otel_service_name: str = "insurance-rag-assistant"
+    otel_exporter_otlp_endpoint: str = "http://localhost:4318"   # Jaeger's OTLP HTTP receiver
+
+    langfuse_public_key: str = ""      # leave blank to disable Langfuse -- app runs fine without it
+    langfuse_secret_key: str = ""
+    langfuse_host: str = "https://cloud.langfuse.com"  # or your self-hosted instance
+
     class Config:
         env_file = ".env"
 

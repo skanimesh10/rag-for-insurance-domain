@@ -10,6 +10,7 @@ from sentence_transformers import CrossEncoder
 
 from app.config import settings
 from app.retrieval import RetrievedChunk
+from app.telemetry import get_tracer
 
 
 @lru_cache(maxsize=1)
@@ -27,12 +28,20 @@ def rerank(query: str, candidates: list[RetrievedChunk], top_k: int | None = Non
         return []
 
     top_k = top_k or settings.rerank_top_k
-    model = get_reranker()
+    tracer = get_tracer()
 
-    pairs = [(query, c.content) for c in candidates]
-    scores = model.predict(pairs)
+    with tracer.start_as_current_span("rerank") as span:
+        span.set_attribute("candidate_count", len(candidates))
+        span.set_attribute("top_k", top_k)
 
-    scored = list(zip(candidates, scores))
-    scored.sort(key=lambda pair: pair[1], reverse=True)
+        model = get_reranker()
+        pairs = [(query, c.content) for c in candidates]
+        scores = model.predict(pairs)
 
-    return [chunk for chunk, _score in scored[:top_k]]
+        scored = list(zip(candidates, scores))
+        scored.sort(key=lambda pair: pair[1], reverse=True)
+        result = [chunk for chunk, _score in scored[:top_k]]
+
+        span.set_attribute("top_score", float(scored[0][1]) if scored else 0.0)
+
+    return result

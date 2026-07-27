@@ -15,5 +15,17 @@ services:
       - pgdata:/var/lib/postgresql/data
       - ./sql/init.sql:/docker-entrypoint-initdb.d/init.sql
 
+  # Phase 4: local trace viewer. The app exports OTLP/HTTP traces to
+  # this container; open http://localhost:16686 to see them.
+  jaeger:
+    image: jaegertracing/all-in-one:latest
+    container_name: insurance_rag_jaeger
+    restart: unless-stopped
+    environment:
+      COLLECTOR_OTLP_ENABLED: "true"
+    ports:
+      - "16686:16686" # Jaeger UI
+      - "4318:4318" # OTLP HTTP receiver (matches OTEL_EXPORTER_OTLP_ENDPOINT default)
+
 volumes:
   pgdata:

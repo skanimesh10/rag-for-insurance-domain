@@ -10,7 +10,7 @@ Phase 2 endpoint: POST /agent/ask
     classifies intent, branches to RAG or a claims-API tool call, and
     pauses for human approval on high-value claims. See app/agent.py.
 
-Phase 3 guardrails (now active on both endpoints, see app/llm.py):
+Phase 3 guardrails (active on both endpoints, see app/llm.py):
     - fallback routing: primary model retried, then a fallback model,
       then a canned response -- callers never see a raw exception
     - prompt-injection defense: retrieved context is delimited and the
@@ -20,7 +20,16 @@ Phase 3 guardrails (now active on both endpoints, see app/llm.py):
       further calls short-circuit to a budget-exceeded message without
       spending another token
 
-No observability yet (Phase 4: OpenTelemetry + Langfuse).
+Phase 4 observability (now active, see app/telemetry.py and
+app/langfuse_client.py):
+    - OpenTelemetry: every request gets a trace with child spans for
+      each pipeline stage (embed, vector search, BM25, RRF fusion,
+      rerank, generate) -- exported to Jaeger via docker-compose, or
+      any OTLP backend in production
+    - Langfuse: the exact prompt/output/token usage for every LLM call,
+      including which model (primary or fallback) actually answered --
+      set LANGFUSE_PUBLIC_KEY/LANGFUSE_SECRET_KEY to enable; safely
+      no-ops if unset
 """
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
@@ -31,17 +40,21 @@ from app.retrieval import hybrid_search
 from app.rerank import rerank
 from app.llm import generate_answer
 from app.agent import build_agent_graph
+from app.telemetry import setup_telemetry
+from app.langfuse_client import flush as flush_langfuse
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    pool = await get_pool()          # warm the connection pool + register pgvector codec on startup
+    setup_telemetry(app)              # Phase 4: OTel tracing, wraps FastAPI's request handling
+    pool = await get_pool()           # warm the connection pool + register pgvector codec on startup
     app.state.agent_graph = build_agent_graph(pool)   # Phase 2: build the LangGraph agent once
     yield
+    flush_langfuse()                  # make sure any buffered Langfuse traces get sent before exit
     await close_pool()
 
 
-app = FastAPI(title="Insurance Policy & Claims Assistant - Phase 3 (RAG + Agent + Guardrails)", lifespan=lifespan)
+app = FastAPI(title="Insurance Policy & Claims Assistant - Phase 4 (RAG + Agent + Guardrails + Observability)", lifespan=lifespan)
 
 
 class AskRequest(BaseModel):
