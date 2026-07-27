@@ -1,0 +1,45 @@
+HEALTH POLICY HP-2024-119
+Policy Type: Health
+
+Section 1.0 Coverage Overview
+This policy provides coverage for hospitalization, outpatient treatment, and
+prescribed medication for the policyholder and named dependents, subject to
+the terms, conditions, and exclusions described below.
+
+Section 2.0 Sum Insured
+The base sum insured under this policy is INR 5,00,000 per policy year.
+Restoration of sum insured applies once per policy year if the base amount
+is exhausted due to a claim, provided the exhaustion was not due to the same
+illness within the same policy year.
+
+Section 3.0 Pre-Existing Conditions
+Pre-existing conditions disclosed at the time of proposal are covered after
+a waiting period of 36 months from the policy inception date. Conditions
+not disclosed at proposal stage are permanently excluded from coverage.
+
+Section 4.0 Waiting Periods
+Section 4.1 Initial Waiting Period
+All illnesses other than accidents are subject to a 30-day initial waiting
+period from the policy start date.
+
+Section 4.2 Maternity Waiting Period
+Maternity-related expenses, including normal delivery, cesarean delivery,
+and pre/post-natal care, are covered only after a continuous waiting period
+of 24 months from the policy inception date. Claims filed before the
+waiting period is complete will be denied regardless of medical necessity.
+
+Section 4.3 Specific Illness Waiting Period
+Certain named illnesses, including cataract, hernia, and joint replacement
+surgery, are subject to a waiting period of 24 months from policy inception.
+
+Section 5.0 Exclusions
+The following are excluded from coverage under any circumstance: cosmetic
+surgery not resulting from an accident, treatment for self-inflicted
+injury, dental treatment unless requiring hospitalization due to an
+accident, and any treatment received outside India.
+
+Section 6.0 Claims Process
+Claims must be filed within 30 days of discharge from hospital for
+reimbursement claims. Cashless claims require pre-authorization at least
+48 hours before a planned hospitalization, or within 24 hours of admission
+in case of an emergency.
