@@ -10,8 +10,17 @@ Phase 2 endpoint: POST /agent/ask
     classifies intent, branches to RAG or a claims-API tool call, and
     pauses for human approval on high-value claims. See app/agent.py.
 
-No guardrails yet (Phase 3: fallback routing, prompt-injection defense,
-token budgets) and no observability yet (Phase 4).
+Phase 3 guardrails (now active on both endpoints, see app/llm.py):
+    - fallback routing: primary model retried, then a fallback model,
+      then a canned response -- callers never see a raw exception
+    - prompt-injection defense: retrieved context is delimited and the
+      model is told to treat it as inert data, never instructions
+    - token budgets: pass "session_id" in the request to accumulate
+      usage across calls; once a session hits max_tokens_per_session,
+      further calls short-circuit to a budget-exceeded message without
+      spending another token
+
+No observability yet (Phase 4: OpenTelemetry + Langfuse).
 """
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
@@ -32,12 +41,13 @@ async def lifespan(app: FastAPI):
     await close_pool()
 
 
-app = FastAPI(title="Insurance Policy & Claims Assistant - Phase 2 (RAG + Agent)", lifespan=lifespan)
+app = FastAPI(title="Insurance Policy & Claims Assistant - Phase 3 (RAG + Agent + Guardrails)", lifespan=lifespan)
 
 
 class AskRequest(BaseModel):
     question: str
-    policy_type: str | None = None  # optional metadata filter, e.g. "health" or "motor"
+    policy_type: str | None = None    # optional metadata filter, e.g. "health" or "motor"
+    session_id: str = "anonymous"      # used for per-session token budget tracking (Phase 3)
 
 
 class Citation(BaseModel):
@@ -60,8 +70,8 @@ async def ask(req: AskRequest) -> AskResponse:
     # Stage 2: cross-encoder reranking down to the top few, high-precision chunks
     top_chunks = rerank(req.question, candidates)
 
-    # Stage 3: generation, grounded in the reranked chunks
-    answer = generate_answer(req.question, top_chunks)
+    # Stage 3: generation, grounded in the reranked chunks, with guardrails
+    answer = generate_answer(req.question, top_chunks, session_id=req.session_id)
 
     return AskResponse(
         answer=answer,
@@ -86,7 +96,7 @@ async def agent_ask(req: AskRequest) -> AgentAskResponse:
     to see all three paths through the graph.
     """
     result = await app.state.agent_graph.ainvoke(
-        {"question": req.question, "policy_type": req.policy_type}
+        {"question": req.question, "policy_type": req.policy_type, "session_id": req.session_id}
     )
 
     return AgentAskResponse(

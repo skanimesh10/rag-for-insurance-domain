@@ -14,6 +14,7 @@ from app.retrieval import RetrievedChunk
 class AgentState(TypedDict, total=False):
     question: str
     policy_type: Optional[str]
+    session_id: str                          # Phase 3: threads through to token budget tracking
 
     intent: str                              # "policy_question" | "claim_status"
 
