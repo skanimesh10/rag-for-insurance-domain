@@ -32,6 +32,10 @@ class Settings(BaseSettings):
     # Guardrails
     max_tokens_per_session: int = 8000
 
+    # Phase 2 -- agentic routing: claims above this amount pause for human approval
+    # instead of being auto-answered.
+    high_value_claim_threshold: float = 500000
+
     class Config:
         env_file = ".env"
 
