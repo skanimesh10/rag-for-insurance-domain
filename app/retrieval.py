@@ -12,6 +12,7 @@ import asyncpg
 
 from app.config import settings
 from app.embeddings import embed_text
+from app.telemetry import get_tracer
 
 
 @dataclass
@@ -125,11 +126,28 @@ async def hybrid_search(
     This is the *candidate* set -- reranking (app/rerank.py) narrows it
     further before it goes into the LLM prompt.
     """
+    tracer = get_tracer()
+
     k = candidate_k or settings.hybrid_candidate_k
-    query_vector = embed_text(query_text)
+
+    with tracer.start_as_current_span("embed_query") as span:
+        span.set_attribute("model", settings.embedding_model_name)
+        query_vector = embed_text(query_text)
 
     async with pool.acquire() as conn:
-        vector_results = await _vector_search(conn, query_vector, k, policy_type)
-        bm25_results = await _bm25_search(conn, query_text, k, policy_type)
+        with tracer.start_as_current_span("vector_search") as span:
+            span.set_attribute("candidate_k", k)
+            span.set_attribute("policy_type", policy_type or "none")
+            vector_results = await _vector_search(conn, query_vector, k, policy_type)
+            span.set_attribute("result_count", len(vector_results))
 
-    return _reciprocal_rank_fusion(vector_results, bm25_results, k=settings.rrf_k)
+        with tracer.start_as_current_span("bm25_search") as span:
+            span.set_attribute("candidate_k", k)
+            bm25_results = await _bm25_search(conn, query_text, k, policy_type)
+            span.set_attribute("result_count", len(bm25_results))
+
+    with tracer.start_as_current_span("rrf_fusion") as span:
+        fused = _reciprocal_rank_fusion(vector_results, bm25_results, k=settings.rrf_k)
+        span.set_attribute("fused_result_count", len(fused))
+
+    return fused
