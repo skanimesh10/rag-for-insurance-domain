@@ -29,8 +29,19 @@ class Settings(BaseSettings):
     rerank_top_k: int = 4             # how many chunks survive reranking into the final prompt
     rrf_k: int = 60                   # RRF fusion constant (60 is the common default)
 
-    # Guardrails
+    # Guardrails (Phase 3)
     max_tokens_per_session: int = 8000
+    max_primary_retries: int = 2          # attempts on the primary model before falling back
+    retry_backoff_seconds: float = 0.5    # base delay, doubles each retry
+    request_timeout_seconds: float = 15.0
+    canned_fallback_message: str = (
+        "I'm having trouble reaching the assistant right now. "
+        "Please try again shortly, or contact support if this continues."
+    )
+    budget_exceeded_message: str = (
+        "This session has reached its token usage limit. "
+        "Please start a new session to continue."
+    )
 
     # Phase 2 -- agentic routing: claims above this amount pause for human approval
     # instead of being auto-answered.

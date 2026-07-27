@@ -109,7 +109,7 @@ async def generate_answer_node(state: AgentState) -> AgentState:
     else:
         chunks = state.get("retrieved_chunks", [])
 
-    answer = generate_answer(state["question"], chunks)
+    answer = generate_answer(state["question"], chunks, session_id=state.get("session_id", "anonymous"))
     return {**state, "answer": answer, "citations": chunks}
 
 
